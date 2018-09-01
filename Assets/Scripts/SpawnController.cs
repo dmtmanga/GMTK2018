@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class SpawnController : MonoBehaviour {
 
-    public SpawnPoint[] _spawnPoint = new SpawnPoint[6];
+    public GameObject[] _door = new GameObject[6];
 
 
 	// Use this for initialization

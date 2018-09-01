@@ -9,8 +9,10 @@ public class PlayerController : MonoBehaviour {
     // Public
     public Laser _laser;
 
+    private float _repairProgress = 0f;
+
     // Private
-    private int _numOfEngineers;
+    private int _numOfEngineers = 0;
 
     #endregion // Fields
 
@@ -19,13 +21,28 @@ public class PlayerController : MonoBehaviour {
 
     // Use this for initialization
     void Start () {
-        _numOfEngineers = 0;
+
 	}
 	
 	// Update is called once per frame
 	void Update () {
-		
+	
 	}
+
+    private void OnTriggerEnter2D(Collider2D collider)
+    {
+        GameObject obj = collider.gameObject;
+
+        if (obj.tag == "Engineer")
+        {
+            // If there's room, take on another engineer for repair
+            if (_numOfEngineers <= 3)
+            {
+                _numOfEngineers++;
+                // Engineer should go into repair state
+            }
+        }
+    }
 
     #endregion // Methods
 
