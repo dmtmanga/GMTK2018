@@ -114,7 +114,8 @@ public class PlayerController : MonoBehaviour {
 
     private void Repair()
     {
-        _repairProgress += repairSpeed[_numOfEngineers - 1];
+        if (_numOfEngineers > 0)
+            _repairProgress += repairSpeed[_numOfEngineers - 1];
     }
 
     #endregion // Methods

@@ -16,6 +16,7 @@ public class EngineerController : MonoBehaviour {
     private Objective _objective = Objective.New;
     private WallController[] _wallControllers = new WallController[6];
     private GameObject _targetRepairPoint;
+    private Animator _anim;
 
     private bool _isRepairingWall = false;
     private bool _isStunned = false;
@@ -23,10 +24,9 @@ public class EngineerController : MonoBehaviour {
     private void Awake()
     {
         GameObject PC = GameObject.FindGameObjectWithTag("Player");
-        //GameObject SC = GameObject.FindGameObjectWithTag("SpawnController");
         GameObject[] wall = GameObject.FindGameObjectsWithTag("Wall");
         _player = PC.GetComponent<PlayerController>();
-        //_spawnController = SC.GetComponent<SpawnController>();
+        _anim = GetComponent<Animator>();
         for (int i = 0; i < 6; i++)
             _wallControllers[i] = wall[i].GetComponent<WallController>();
     }
@@ -56,24 +56,46 @@ public class EngineerController : MonoBehaviour {
                 break;
             case Objective.Walk:
                 // Currently walking towards player while thinking
-                if(!IsStunned)
-                    transform.Translate((_player.transform.position - transform.position).normalized * Time.deltaTime * _moveSpeed);
+                if (!IsStunned)
+                {
+                    Vector3 direction = _player.transform.position - transform.position;
+                    _anim.SetBool("IsIdle", false);
+                    _anim.SetFloat("MoveX", direction.x);
+                    _anim.SetFloat("MoveY", direction.y);
+                    _anim.SetBool("xIsGreater", Mathf.Abs(direction.x) > Mathf.Abs(direction.y));
+                    transform.Translate(direction.normalized * Time.deltaTime * _moveSpeed);
+                }
                 break;
             case Objective.Wall:
                 // If the target repair point becomes occupied, change objective;
                 if (_targetRepairPoint.GetComponent<RepairPointController>().IsOccupied)
                     StartCoroutine(DecideObjective());
                 if (!IsStunned)
-                    transform.Translate((_targetRepairPoint.transform.position - transform.position).normalized * Time.deltaTime * _moveSpeed);
+                {
+                    Vector3 direction = _targetRepairPoint.transform.position - transform.position;
+                    _anim.SetBool("IsIdle", false);
+                    _anim.SetFloat("MoveX", direction.x);
+                    _anim.SetFloat("MoveY", direction.y);
+                    _anim.SetBool("xIsGreater", Mathf.Abs(direction.x) > Mathf.Abs(direction.y));
+                    transform.Translate(direction.normalized * Time.deltaTime * _moveSpeed);
+                }
                 break;
             case Objective.Player:
                 // If the player has no more room, change objective;
                 if (!_player.HasRoomForRepair)
                     StartCoroutine(DecideObjective());
                 if(!IsStunned)
-                    transform.Translate((_player.transform.position - transform.position).normalized * Time.deltaTime * _moveSpeed);
+                {
+                    Vector3 direction = _player.transform.position - transform.position;
+                    _anim.SetBool("IsIdle", false);
+                    _anim.SetFloat("MoveX", direction.x);
+                    _anim.SetFloat("MoveY", direction.y);
+                    _anim.SetBool("xIsGreater", Mathf.Abs(direction.x) > Mathf.Abs(direction.y));
+                    transform.Translate(direction.normalized * Time.deltaTime * _moveSpeed);
+                }
                 break;
             case Objective.Stand:
+                _anim.SetBool("IsIdle", true);
                 StartCoroutine(DecideObjective());
                 break;
         }
@@ -81,11 +103,12 @@ public class EngineerController : MonoBehaviour {
 
     private void OnCollisionEnter2D(Collision2D collision)
     {
-        GameObject collider = collision.collider.gameObject;
+        GameObject obj = collision.collider.gameObject;
 
-        if (collider.tag == "Projectile")
+        if (obj.tag == "Projectile")
         {
-            Destroy(collider);
+            Destroy(obj);
+            _anim.SetBool("IsHit", true);
             StartCoroutine(Stunned());
         }
     }
@@ -161,12 +184,10 @@ public class EngineerController : MonoBehaviour {
     {
         IsStunned = true;
         GetComponent<CircleCollider2D>().enabled = false;
-        GetComponent<SpriteRenderer>().color = Color.red;
-        // Some animation stuff here for stun
-
         yield return new WaitForSeconds(1);
+        _anim.SetBool("IsKO", true);    
+        yield return new WaitForSeconds(1.5f);
         Destroy(gameObject);
-        // Need some animation stuff here
     }
 
     private IEnumerator WalkIn()
@@ -213,16 +234,17 @@ public class EngineerController : MonoBehaviour {
         {
             if (value == true)
             {
+                // Starting repairs
                 CurrentObjective = Objective.Wall;
-                gameObject.GetComponent<SpriteRenderer>().color = Color.magenta;
-                _isRepairingWall = value;
             }
             else
             {
+                // Finished repairing
                 CurrentObjective = Objective.New;
-                gameObject.GetComponent<SpriteRenderer>().color = Color.grey;
-                _isRepairingWall = false;
+                _targetRepairPoint.GetComponent<RepairPointController>().IsOccupied = false;
             }
+            _anim.SetBool("IsRepairing", value);
+            _isRepairingWall = value;
         }
     }
     
