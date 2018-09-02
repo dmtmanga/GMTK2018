@@ -4,8 +4,11 @@
 TagManager:
   serializedVersion: 2
   tags:
-  - NPC
   - Projectile
+  - SpawnController
+  - Wall
+  - Engineer
+  - RepairPoint
   layers:
   - Default
   - TransparentFX

@@ -25,7 +25,12 @@ public class Laser : MonoBehaviour {
         while (true)
         {
             yield return new WaitForSeconds(_fireDelay);
-            Instantiate(_projectilePrefab, gameObject.transform);
+            OneShot();
         }
+    }
+
+    private void OneShot()
+    {
+        Instantiate(_projectilePrefab, gameObject.transform);
     }
 }

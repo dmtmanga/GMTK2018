@@ -5,6 +5,7 @@ using UnityEngine;
 public class Projectile : MonoBehaviour {
 
     public float _speed;
+    public float _power;
     private Vector3 _direction;
     private Rigidbody2D rb;
 
@@ -22,8 +23,6 @@ public class Projectile : MonoBehaviour {
 	// Update is called once per frame
 	void Update () {
         // Projectiles move towards mouse position once instantiated
-        float step = _speed * Time.deltaTime;
-        //transform.Translate(_direction * _speed * Time.deltaTime);
         rb.velocity = new Vector2(_direction.x, _direction.y).normalized * _speed;
     }
 
