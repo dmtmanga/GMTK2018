@@ -12,6 +12,7 @@ public class WallController : MonoBehaviour {
     private float _wallHP;
     private float _repairSpeed = 0.1f;
     private float[] _wallDamageThreshold = {75f, 50f, 25f};
+    private bool _deactivated = false;
 
     private void Awake()
     {
@@ -26,7 +27,17 @@ public class WallController : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
-        float percentHP = 100 * _wallHP / _wallMaxHP;
+
+        if (_deactivated)
+            return;
+
+        if(_gameController.IsGameOver)
+        {
+            foreach (GameObject repairPoint in _repairPoint)
+                repairPoint.GetComponent<RepairPointController>().GameOverSparks();
+            _deactivated = true;
+            return;
+        }
 
         foreach (GameObject rp in _repairPoint)
             if (rp.GetComponent<RepairPointController>().IsOccupied)

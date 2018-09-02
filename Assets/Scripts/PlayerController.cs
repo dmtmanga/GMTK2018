@@ -7,6 +7,7 @@ public class PlayerController : MonoBehaviour {
     #region Fields
 
     // Public
+    public GameObject _fallingEngiePrefab;
     public Laser _laser;
     public float[] repairSpeed = new float[3];
 
@@ -35,9 +36,11 @@ public class PlayerController : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
-        // CIf win condition has been met, the laser can stop shooting
+        // If win condition has been met, the laser can stop shooting
         if (_gameController.IsGameWin)
-            _laser.enabled = false;
+        {
+            return;
+        }
 
         // Repair progress bar should update
         // Amount repaired will increase based on the number of engineers doing repairs
@@ -48,7 +51,7 @@ public class PlayerController : MonoBehaviour {
         _mouseCursorSpeedX = Input.GetAxis("Mouse X") / Time.deltaTime;
         _mouseCursorSpeedY = Input.GetAxis("Mouse Y") / Time.deltaTime;
 
-        if ( !_isDroppingEngie && _numOfEngineers > 0 && (_mouseCursorSpeedX > 40f ||_mouseCursorSpeedY > 40f))
+        if ( !_isDroppingEngie && _numOfEngineers > 0 && (_mouseCursorSpeedX > 70f ||_mouseCursorSpeedY > 70f))
             LoseAnEngineer();
     }
 
@@ -59,13 +62,13 @@ public class PlayerController : MonoBehaviour {
         if (obj.tag == "Engineer" && obj.GetComponent<EngineerController>().CurrentObjective == EngineerController.Objective.Player)
         {
             // If there's room, take on another engineer for repair
-            if (_numOfEngineers <= 3)
+            if (_numOfEngineers < 3)
             {
                 _numOfEngineers++;
                 // Player sprite is updated and engineer object destroyed
                 switch (_numOfEngineers) {
                     case 0:
-                        gameObject.GetComponent<SpriteRenderer>().color = Color.green;
+                        gameObject.GetComponent<SpriteRenderer>().color = Color.white;
                         break;
                     case 1:
                         gameObject.GetComponent<SpriteRenderer>().color = Color.yellow;
@@ -74,7 +77,7 @@ public class PlayerController : MonoBehaviour {
                         gameObject.GetComponent<SpriteRenderer>().color = Color.cyan;
                         break;
                     case 3:
-                        gameObject.GetComponent<SpriteRenderer>().color = Color.blue;
+                        gameObject.GetComponent<SpriteRenderer>().color = Color.green;
                         break;
                 }
                 Destroy(obj);
@@ -84,7 +87,9 @@ public class PlayerController : MonoBehaviour {
 
     private IEnumerator DropEngineer()
     {
-        yield return new WaitForSeconds(2);
+        Instantiate(_fallingEngiePrefab, transform);
+
+        yield return new WaitForSeconds(1);
         _isDroppingEngie = false;
     }
 
@@ -98,7 +103,7 @@ public class PlayerController : MonoBehaviour {
         switch (_numOfEngineers)
         {
             case 0:
-                gameObject.GetComponent<SpriteRenderer>().color = Color.green;
+                gameObject.GetComponent<SpriteRenderer>().color = Color.white;
                 break;
             case 1:
                 gameObject.GetComponent<SpriteRenderer>().color = Color.yellow;
@@ -107,7 +112,7 @@ public class PlayerController : MonoBehaviour {
                 gameObject.GetComponent<SpriteRenderer>().color = Color.cyan;
                 break;
             case 3:
-                gameObject.GetComponent<SpriteRenderer>().color = Color.blue;
+                gameObject.GetComponent<SpriteRenderer>().color = Color.green;
                 break;
         }
     }
@@ -116,6 +121,13 @@ public class PlayerController : MonoBehaviour {
     {
         if (_numOfEngineers > 0)
             _repairProgress += repairSpeed[_numOfEngineers - 1];
+
+        if (_repairProgress >= 100f)
+        {
+            _gameController.IsGameWin = true;
+            GetComponent<SpriteRenderer>().color = Color.blue;
+            Destroy(_laser);
+        }
     }
 
     #endregion // Methods

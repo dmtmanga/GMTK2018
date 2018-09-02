@@ -6,7 +6,7 @@ using UnityEngine;
 public class EngineerController : MonoBehaviour {
 
     // Declare enum for the possible objectives Engineers can have
-    public enum Objective { New, Player, Rod, Stand, Wall, Walk};
+    public enum Objective { New, Player, Rod, Stand, Success, Wall, Walk};
 
     public float _moveSpeed = 0f;
     public float _decisionDelay = 0f;
@@ -16,6 +16,7 @@ public class EngineerController : MonoBehaviour {
     private Objective _objective = Objective.New;
     private WallController[] _wallControllers = new WallController[6];
     private GameObject _targetRepairPoint;
+    private GameController _gameController;
     private Animator _anim;
 
     private bool _isRepairingWall = false;
@@ -26,6 +27,7 @@ public class EngineerController : MonoBehaviour {
         GameObject PC = GameObject.FindGameObjectWithTag("Player");
         GameObject[] wall = GameObject.FindGameObjectsWithTag("Wall");
         _player = PC.GetComponent<PlayerController>();
+        _gameController = GameObject.FindGameObjectWithTag("GameController").GetComponent<GameController>();
         _anim = GetComponent<Animator>();
         for (int i = 0; i < 6; i++)
             _wallControllers[i] = wall[i].GetComponent<WallController>();
@@ -42,12 +44,18 @@ public class EngineerController : MonoBehaviour {
         // If currently repairing a wall, stay still
         if (IsRepairingWall)
         {
-            if (_targetRepairPoint.transform.parent.gameObject.GetComponent<WallController>().IsRepaired)
+            WallController wall = _targetRepairPoint.transform.parent.gameObject.GetComponent<WallController>();
+
+            if (wall.IsRepaired || wall.DoorIsLockedDown)
             {
                 IsRepairingWall = false;
             }
             return;
         }
+
+        if (_gameController.IsGameWin)
+            return;
+
         switch (CurrentObjective)
         {
             case Objective.New:
@@ -68,7 +76,8 @@ public class EngineerController : MonoBehaviour {
                 break;
             case Objective.Wall:
                 // If the target repair point becomes occupied, change objective;
-                if (_targetRepairPoint.GetComponent<RepairPointController>().IsOccupied)
+                if (_targetRepairPoint.GetComponent<RepairPointController>().IsOccupied ||
+                    _targetRepairPoint.transform.parent.gameObject.GetComponent<WallController>().DoorIsLockedDown)
                     StartCoroutine(DecideObjective());
                 if (!IsStunned)
                 {
@@ -115,13 +124,19 @@ public class EngineerController : MonoBehaviour {
 
     private GameObject ChooseRepairPoint( GameObject[] walls)
     {
-        Dictionary<float, GameObject> potentialWalls = new Dictionary<float, GameObject>();
+        //Dictionary<float, GameObject> potentialWalls = new Dictionary<float, GameObject>();
+        List<GameObject> potentialWalls = new List<GameObject>();
+        List<float> distanceToWall = new List<float>();
+
         foreach (GameObject wall in walls)
             if (wall.GetComponent<WallController>().HasRoomForRepair)
-                potentialWalls.Add(Mathf.Abs(Vector3.Distance(transform.position, wall.transform.position)), wall);
+            {
+                potentialWalls.Add(wall);
+                distanceToWall.Add(Mathf.Abs(Vector3.Distance(transform.position, wall.transform.position)));
+            }
 
         // Find closest of the potential walls
-        GameObject closestWall = FindClosestWall(potentialWalls);
+        GameObject closestWall = FindClosestWall(potentialWalls, distanceToWall);
 
         return closestWall.GetComponent<WallController>().GetAvailableRepairPoint();
     }
@@ -138,6 +153,12 @@ public class EngineerController : MonoBehaviour {
         {
             _targetRepairPoint = ChooseRepairPoint(damagedWalls);
             CurrentObjective = Objective.Wall;
+
+            // If the player is closer - go for repairing the player mech
+            float rpDistance = Mathf.Abs((_targetRepairPoint.transform.position - transform.position).magnitude);
+            float playerDistance = Mathf.Abs((_player.transform.position - transform.position).magnitude);
+            if (playerDistance < rpDistance)
+                CurrentObjective = Objective.Player;
         }
         // If walls aren't an option, there's the player
         else if (_player.HasRoomForRepair)
@@ -149,13 +170,11 @@ public class EngineerController : MonoBehaviour {
 
     // Takes a dictionary of keys: distance to wall and values: wall object
     // Returns closest wall
-    private GameObject FindClosestWall(Dictionary<float, GameObject> walls)
+    private GameObject FindClosestWall(List<GameObject> walls, List<float> distance)
     {
-        float minDistance = Mathf.Min(walls.Keys.ToArray());
-        GameObject wall;
-        bool success = walls.TryGetValue(minDistance, out wall);
+        float minDistance = distance.Min();
 
-        return success ? wall : null;
+        return walls[distance.IndexOf(minDistance)];
     }
 
     private GameObject[] GetDamagedWalls()
@@ -185,15 +204,15 @@ public class EngineerController : MonoBehaviour {
         IsStunned = true;
         GetComponent<CircleCollider2D>().enabled = false;
         yield return new WaitForSeconds(1);
-        _anim.SetBool("IsKO", true);    
-        yield return new WaitForSeconds(1.5f);
+        //_anim.SetBool("IsKO", true);    
+        //yield return new WaitForSeconds(1.5f);
         Destroy(gameObject);
     }
 
     private IEnumerator WalkIn()
     {
         CurrentObjective = Objective.Walk;
-        yield return new WaitForSeconds(1);
+        yield return new WaitForSeconds(0.8f);
         CurrentObjective = Objective.Stand;
     }
 

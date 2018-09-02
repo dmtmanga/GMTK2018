@@ -31,8 +31,12 @@ public class SpawnController : MonoBehaviour {
         int spawnIndex;
 
         // Begin spawn loop
-        while (_gameController.IsGameOver == false)
+        while (true)
         {
+            // Stop the spawn loop if game ends
+            if (_gameController.IsGameOver || _gameController.IsGameWin)
+                Destroy(gameObject);
+
             // Select a door
             spawnIndex = Random.Range(0, 4);
             // Reroll index if the door is inactive

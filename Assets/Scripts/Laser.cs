@@ -5,12 +5,18 @@ using UnityEngine;
 public class Laser : MonoBehaviour {
 
     public Projectile _projectilePrefab;
+    public AudioSource _audioSource;
     public float _fireDelay;
     public float _fireSpread;
+    public AudioClip _fireSfx;
 
+    private void Awake()
+    {
+        _audioSource = GetComponent<AudioSource>();
+    }
 
-	// Use this for initialization
-	void Start () {
+    // Use this for initialization
+    void Start () {
         StartCoroutine(Shoot());
 	}
 	
@@ -25,6 +31,7 @@ public class Laser : MonoBehaviour {
         while (true)
         {
             yield return new WaitForSeconds(_fireDelay);
+            _audioSource.PlayOneShot(_fireSfx);
             OneShot();
         }
     }
